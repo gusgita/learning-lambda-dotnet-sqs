@@ -1,13 +1,14 @@
 using System.Text.Json;
 using Amazon.Lambda.ApplicationLoadBalancerEvents;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Microsoft.Extensions.DependencyInjection;
 using Model;
 using ServerlessConfig;
 using SQSHelper.Abstraction;
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
 
 namespace SQSPusher
 {
@@ -49,7 +50,7 @@ namespace SQSPusher
             }
             catch (Exception e)
             {
-                _logger.Log(e.ToString());
+                _logger.Log($"Exception when deserializing message body: {e.ToString()}");
 
                 return new ApplicationLoadBalancerResponse {
                     Body = "Request body is invalid.",

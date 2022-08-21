@@ -1,14 +1,23 @@
+using System.Text.Json;
 using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.SystemTextJson;
 using Amazon.Lambda.SQSEvents;
+using Microsoft.Extensions.DependencyInjection;
+using Model;
+using ServerlessConfig;
+using SQSHelper.Abstraction;
 
 
 // Assembly attribute to enable the Lambda function's JSON input to be converted into a .NET class.
-[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.SystemTextJson.DefaultLambdaJsonSerializer))]
+[assembly: LambdaSerializer(typeof(DefaultLambdaJsonSerializer))]
 
 namespace SQSWatcher
 {
     public class Function
     {
+        private ISQSHelper _sqsHelper;
+        private ILambdaLogger? _logger;
+
         /// <summary>
         /// Default constructor. This constructor is used by Lambda to construct the instance. When invoked in a Lambda environment
         /// the AWS credentials will come from the IAM role associated with the function and the AWS region will be set to the
@@ -16,7 +25,9 @@ namespace SQSWatcher
         /// </summary>
         public Function()
         {
-
+            ServicesConfigurator.ConfigureServices();
+            
+            _sqsHelper = ServicesConfigurator.Services.GetRequiredService<ISQSHelper>();
         }
 
 
@@ -29,6 +40,7 @@ namespace SQSWatcher
         /// <returns></returns>
         public async Task FunctionHandler(SQSEvent evnt, ILambdaContext context)
         {
+            _logger = context.Logger;
             foreach (var message in evnt.Records)
             {
                 await ProcessMessageAsync(message, context);
@@ -39,8 +51,24 @@ namespace SQSWatcher
         {
             context.Logger.Log($"Processed message {message.Body}");
 
-            // TODO: Do interesting work based on the new message
-            await Task.CompletedTask;
+            Message? msg = null;
+            try {
+                msg = JsonSerializer.Deserialize<Message>(message.Body);
+            }
+            catch(Exception e) {
+                _logger?.Log($"Exception when trying to deserialize message body: {e.ToString()}");
+                //TODO: Move to dead-letter
+            }
+
+            if (msg != null) {
+                msg.ProcessingStatus = Status.Processed;
+
+                var msgJson = JsonSerializer.Serialize(msg);
+                _logger?.Log($"Sending message: {msgJson}");
+                await _sqsHelper.SendMessage(msgJson);
+
+                _logger?.Log("End processing received request.");
+            }
         }
     }
 }

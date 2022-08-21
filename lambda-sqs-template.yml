@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template with SQS and Lambda
+Parameters:
+  ProjectName:
+    Description: Project name
+    Type: String
+  VpcId:
+    Description: VPC Id
+    Type: AWS::EC2::VPC::Id
+Resources:
+  ReceiveQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-receive-sqs'
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ReceiveDeadLetterQueue.Arn
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  ReceiveDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-receive-deadletter-sqs'
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  SendQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-send-sqs'
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SendDeadLetterQueue.Arn
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  SendDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-send-deadletter-sqs'
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  WatcherLambdaDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub '${ProjectName}-deadletter-sqs'
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  PusherLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub '${ProjectName}-sqs-pusher'
+      Description: Sample AWS Lambda to expose API for pushing message into SQS
+      Handler: SQSPusher::SQSPusher.Function::FunctionHandler
+      Code: #TODO: Modify
+        S3Bucket: String
+        S3Key: String
+      PackageType: Zip
+      Environment: 
+        Variables:
+          SqsQueueSendUrl: !Ref SendQueue
+          SqsQueueReceiveUrl: !Ref ReceiveQueue
+      Role: !Ref LambdaExecutionRole
+      Runtime: dotnetcore3.1
+      Tags: 
+        - Key : Environment
+          Value: Learning
+      # VpcConfig: 
+      #   VpcConfig
+  PusherLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties: 
+      Action: lambda:InvokeFunction
+      FunctionName: !GetAtt PusherLambda.Arn
+      FunctionUrlAuthType: NONE
+      Principal: '*'
+      SourceArn: String
+  PullerLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-sqs-puller
+      Description: Sample AWS Lambda to expose API for pulling message from SQS
+      Handler: SQSPuller::SQSPuller.Function::FunctionHandler
+      Code: #TODO: Modify
+        S3Bucket: String
+        S3Key: String
+      PackageType: Zip
+      Environment: 
+        Variables:
+          SqsQueueSendUrl: !Ref SendQueue
+          SqsQueueReceiveUrl: !Ref ReceiveQueue
+      Role: !Ref LambdaExecutionRole
+      Runtime: dotnetcore3.1
+      Tags: 
+        - Key : "Environment"
+          Value: "Learning"
+      # VpcConfig: 
+      #   VpcConfig
+  WatcherLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-sqs-watcher
+      Description: Sample AWS Lambda to watch an SQS
+      Handler: SQSWatcher::SQSWatcher.Function::FunctionHandler
+      Code: #TODO: Modify
+        S3Bucket: String
+        S3Key: String
+      DeadLetterConfig:
+        TargetArn: !GetAtt WatcherLambdaDeadLetterQueue.Arn
+      PackageType: Zip
+      Environment: 
+        Variables:
+          SqsQueueSendUrl: !Ref SendQueue
+          SqsQueueReceiveUrl: !Ref ReceiveQueue
+      Role: !Ref LambdaExecutionRole
+      Runtime: dotnetcore3.1
+      Tags: 
+        - Key : "Environment"
+          Value: "Learning"
+      # VpcConfig: 
+      #   VpcConfig
+  WatcherLambdaEventSourceMappingToReceiveQueue:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties: 
+      Enabled: True
+      EventSourceArn: !GetAtt ReceiveQueue.Arn
+      FunctionName: !GetAtt WatcherLambda.Arn
+  
+  
+
+

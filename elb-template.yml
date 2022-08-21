@@ -1,0 +1,97 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: AWS CloudFormation Template with SQS and Lambda
+Parameters:
+  ProjectName:
+    Description: Project name
+    Type: String
+Resources:
+  LearningLambdaToSqsElb:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties: 
+      Name: !Sub '${ProjectName}-elb'
+      Type: application
+      IpAddressType: ipv4
+      Scheme: internet-facing
+      SecurityGroups: #TODO : Add
+        - String
+      SubnetMappings: #TODO : Add
+        - SubnetMapping
+      Subnets: 
+        - String
+      Tags: 
+        - Key : Environment
+          Value: Learning
+  LearningLambdaToSqsElbListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties: 
+      AlpnPolicy: 
+        - String
+      Certificates: 
+        - Certificate #TODO: Add Certificate Arn
+      DefaultActions: 
+        - Type: fixed-response
+          Order: 1
+          FixedResponseConfig: 
+              ContentType: String
+              MessageBody: Not Found
+              StatusCode: "404"
+      LoadBalancerArn: !Ref LearningLambdaToSqsElb
+      Port: Integer
+      Protocol: String
+      SslPolicy: String
+  LearningLambdaToSqsElbListenerRuleGet:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties: 
+      Actions: 
+        - Type: forward
+          Order: 1
+          TargetGroupArn: String #TODO add target group
+      Conditions: 
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - GET
+      ListenerArn: !Ref LearningLambdaToSqsElbListener
+      Priority: 1
+  LearningLambdaToSqsElbListenerRuleGetTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties: 
+      HealthCheckEnabled: Boolean
+      HealthCheckIntervalSeconds: Integer
+      HealthCheckPath: String
+      HealthCheckPort: String
+      HealthCheckProtocol: String
+      HealthCheckTimeoutSeconds: Integer
+      HealthyThresholdCount: Integer
+      IpAddressType: String
+      Matcher: 
+        Matcher
+      Name: String
+      Port: Integer
+      Protocol: String
+      ProtocolVersion: String
+      Tags: 
+        - Tag
+      TargetGroupAttributes: 
+        - TargetGroupAttribute
+      Targets: 
+        - TargetDescription
+      TargetType: String
+      UnhealthyThresholdCount: Integer
+      VpcId: String
+  LearningLambdaToSqsElbListenerRulePost:
+    Type: AWS::ElasticLoadBalancingV2::ListenerRule
+    Properties: 
+      Actions: 
+        - Type: forward
+          Order: 1
+          TargetGroupArn: String #TODO add target group
+      Conditions: 
+        - Field: http-request-method
+          HttpRequestMethodConfig: 
+            Values:
+              - POST
+      ListenerArn: !Ref LearningLambdaToSqsElbListener
+      Priority: 2
+
+

@@ -14,5 +14,11 @@
     <PackageReference Include="Amazon.Lambda.Core" Version="2.1.0" />
     <PackageReference Include="Amazon.Lambda.Serialization.SystemTextJson" Version="2.3.0" />
     <PackageReference Include="Amazon.Lambda.SQSEvents" Version="2.1.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="6.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\SQSHelper.Abstraction\SQSHelper.Abstraction.csproj" />
+    <ProjectReference Include="..\ServerlessConfig\ServerlessConfig.csproj" />
+    <ProjectReference Include="..\Model\Model.csproj" />
   </ItemGroup>
 </Project>
